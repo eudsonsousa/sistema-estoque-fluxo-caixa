@@ -18,6 +18,7 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB máximo para uploads
     
     # Inicializar extensões
     db.init_app(app)
@@ -25,13 +26,15 @@ def create_app():
     CORS(app)
     
     # Registrar blueprints
-    from app.routes import auth_bp, products_bp, inventory_bp, cashflow_bp, reports_bp
+    from app.routes import auth_bp, products_bp, inventory_bp, cashflow_bp, reports_bp, clients_bp, purchases_bp
     
     app.register_blueprint(auth_bp.bp)
     app.register_blueprint(products_bp.bp)
     app.register_blueprint(inventory_bp.bp)
     app.register_blueprint(cashflow_bp.bp)
     app.register_blueprint(reports_bp.bp)
+    app.register_blueprint(clients_bp.bp)
+    app.register_blueprint(purchases_bp.bp)
     
     # Criar tabelas
     with app.app_context():
