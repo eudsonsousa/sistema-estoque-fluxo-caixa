@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: sistema-estoque-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: ${DB_NAME:-sistema_estoque}
+      MYSQL_USER: ${DB_USER:-estoque_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-estoque_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - estoque-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sistema-estoque-backend
+    environment:
+      DB_HOST: mysql
+      DB_USER: ${DB_USER:-estoque_user}
+      DB_PASSWORD: ${DB_PASSWORD:-estoque_pass}
+      DB_NAME: ${DB_NAME:-sistema_estoque}
+      DB_PORT: 3306
+      FLASK_ENV: ${FLASK_ENV:-production}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-your-jwt-secret-key-change-in-production}
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - estoque-network
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sistema-estoque-frontend
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000/api}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - estoque-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  estoque-network:
+    driver: bridge
